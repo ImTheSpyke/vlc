@@ -170,6 +170,7 @@ private:
 
     void makeLightPalette();
     void makeDarkPalette();
+    void makeFigmaPalette();
     void makeSystemPalette();
 
 private:

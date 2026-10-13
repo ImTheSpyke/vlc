@@ -69,12 +69,14 @@ FirstRunWizard::FirstRunWizard( qt_intf_t *_p_intf, QWidget *parent)
     colorSchemeGroup->addButton( ui.systemButton );
     colorSchemeGroup->addButton( ui.lightButton );
     colorSchemeGroup->addButton( ui.darkButton );
+    colorSchemeGroup->addButton( ui.figmaButton );
     colorSchemeGroup->setExclusive( true );
 
     colorSchemeImages = new QButtonGroup( this );
     colorSchemeImages->addButton( ui.daynightImage );
     colorSchemeImages->addButton( ui.lightImage );
     colorSchemeImages->addButton( ui.darkImage );
+    colorSchemeImages->addButton( ui.figmaImage );
 
     /* Setup the layout page */
     ui.layoutGroup->setId( ui.modernButton, 0 );
@@ -210,6 +212,9 @@ void FirstRunWizard::updateColorLabel( QAbstractButton* btn )
         case ColorSchemeModel::Night:
             ui.explainerLabel->setText( qtr( "<i>VLC will automatically use dark mode</i>" ) );
             break;
+        case ColorSchemeModel::Figma:
+            ui.explainerLabel->setText( qtr( "<i>VLC will use the colors of the VLC redesign</i>" ) );
+            break;
     }
 }
 
@@ -281,7 +286,7 @@ int FirstRunWizard::nextId() const
 /**
  * Sets up the buttons and options for the color scheme page
  * Needs to be set up later or else the main interface hasn't been created yet
- * Color schemes are always in the order system/auto, day then night
+ * Color schemes are always in the order system/auto, day, night then figma
  */
 void FirstRunWizard::initializePage( int id )
 {

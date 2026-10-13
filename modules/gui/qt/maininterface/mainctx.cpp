@@ -174,6 +174,7 @@ MainCtx::MainCtx(qt_intf_t *_p_intf)
             scheme = Qt::ColorScheme::Light;
             break;
         case ColorSchemeModel::ColorScheme::Night:
+        case ColorSchemeModel::ColorScheme::Figma:
             scheme = Qt::ColorScheme::Dark;
             break;
         case ColorSchemeModel::ColorScheme::System:

@@ -34,7 +34,8 @@ public:
     {
         System,
         Day,
-        Night
+        Night,
+        Figma
     };
 
     struct Item
