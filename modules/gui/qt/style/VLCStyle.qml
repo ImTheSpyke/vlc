@@ -274,6 +274,14 @@ QtObject {
     readonly property int bannerButton_height: icon_banner
     readonly property int bannerButton_width: icon_banner
 
+    // top bar of the Figma redesign: a 40px line, 6px from the window edges,
+    // 28px buttons 10px apart and 36x24 window buttons
+    readonly property int topBarFigmaHeight: MainCtx.dp(40, scale)
+    readonly property int topBarFigmaMargin: MainCtx.dp(6, scale)
+    readonly property int topBarFigmaSpacing: MainCtx.dp(10, scale)
+    readonly property int csdButtonFigmaWidth: MainCtx.dp(36, scale)
+    readonly property int csdButtonFigmaHeight: MainCtx.dp(24, scale)
+
     // Drag and drop
 
     readonly property int dragDelta: MainCtx.dp(12, scale)
