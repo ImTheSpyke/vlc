@@ -326,6 +326,19 @@ QtObject {
 
     readonly property int controlBarBookmarksHeight: icon_xsmall * 0.9
 
+    // Single row control bar (time, slider and controls on the same line)
+    readonly property int controlBarInlineHeight: MainCtx.dp(54, scale)
+    readonly property int controlBarInlineSpacing: MainCtx.dp(20, scale)
+    readonly property int controlBarSliderHeight: MainCtx.dp(28, scale)
+    readonly property int controlBarSliderInset: MainCtx.dp(2, scale)
+    readonly property int controlBarSliderHandleWidth: MainCtx.dp(8, scale)
+    readonly property real controlBarRadius: MainCtx.dp(6, scale)
+    readonly property int controlBarTimeWidth: MainCtx.dp(76, scale)
+    readonly property int playButtonWidth: MainCtx.dp(54, scale)
+    readonly property int playButtonHeight: MainCtx.dp(28, scale)
+    readonly property int volumeSliderWidth: MainCtx.dp(88, scale)
+    readonly property int volumeSliderHeight: MainCtx.dp(28, scale)
+
     // Player control layout
     readonly property int controlLayoutHeight: MainCtx.dp(64, scale)
     readonly property int controlLayoutHeightPinned: MainCtx.dp(32, scale)

@@ -152,19 +152,7 @@ T.Control {
 
         hoverEnabled: true
 
-        readonly property bool cursorInside: {
-            if (!containsMouse)
-                return false
-
-            const center = (width / 2)
-            if (Helpers.pointInRadius( center - mouseX,
-                                       center - mouseY,
-                                       center )) {
-                return true
-            } else {
-                return false
-            }
-        }
+        readonly property bool cursorInside: containsMouse
 
         onCursorInsideChanged: {
             if (pressed && !cursorInside) {
@@ -217,8 +205,7 @@ T.Control {
                 return VLCIcons.play_filled
         }
 
-        color: cursorInside ? theme.accent
-                            : "black"  //foreground is always black
+        color: "#161616" //foreground is always dark, over the accent background
 
         font.pixelSize: Math.round(parent.height / 1.7)
 
@@ -240,14 +227,14 @@ T.Control {
     }
 
     background: Item {
-        implicitWidth: height
-        implicitHeight: VLCStyle.icon_medium
+        implicitWidth: VLCStyle.playButtonWidth
+        implicitHeight: VLCStyle.playButtonHeight
 
         Widgets.AnimatedBackground {
             anchors.fill: parent
-            anchors.margins: -border.width * 4
+            anchors.margins: -border.width * 2
 
-            radius: width / 2
+            radius: VLCStyle.controlBarRadius + border.width * 2
             border.pixelAligned: false
 
             enabled: theme.initialized
@@ -258,11 +245,17 @@ T.Control {
         Rectangle {
             anchors.fill: parent
 
-            radius: width / 2
+            radius: VLCStyle.controlBarRadius
 
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "#e25b01" }
-                GradientStop { position: 1.0; color: "#f89a06" }
+            color: root.cursorInside ? Qt.lighter(theme.accent, 1.1) : theme.accent
+
+            DelayedBehavior on color {
+                delayedEnabled: theme.initialized
+
+                ColorAnimation {
+                    duration: VLCStyle.duration_veryShort
+                    easing.type: Easing.InOutSine
+                }
             }
 
             Widgets.RoundedRectangleShadow {
@@ -277,16 +270,21 @@ T.Control {
                 color: theme.accent.alpha(0.29)
             }
 
+            // Grows while the button is held, the player stops when it fills
+            // the button:
             Rectangle {
                 id: innerRectangle
 
-                color: "white"
+                color: Qt.rgba(0, 0, 0, 0.25)
 
-                anchors.fill: parent
-                anchors.margins: _diminished ? (parent.width / 2)
-                                             : VLCStyle.dp(2, VLCStyle.scale)
+                anchors.centerIn: parent
 
-                radius: width / 2
+                width: _diminished ? parent.width : 0
+                height: parent.height
+
+                visible: width > 0
+
+                radius: VLCStyle.controlBarRadius
 
                 property bool _diminished: false
 
@@ -310,7 +308,7 @@ T.Control {
                     onTriggered: innerRectangle._diminished = true
                 }
 
-                Behavior on anchors.margins {
+                Behavior on width {
                     id: marginBehavior
                     NumberAnimation {
                         // Press and hold action must be triggered

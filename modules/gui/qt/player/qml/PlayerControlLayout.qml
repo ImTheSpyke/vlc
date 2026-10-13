@@ -36,6 +36,23 @@ FocusScope {
 
     property int identifier: -1
 
+    // Items (such as the time labels and the position slider) laid out on
+    // the same row as the controls, between the center and right controls.
+    // When it is not empty, the left and center controls are packed at the
+    // beginning of the row instead of the center being centered.
+    property var inlineItems: []
+
+    readonly property bool _inline: inlineItems.length > 0
+
+    // Item of the inline items that participates in the keyboard navigation
+    // between the center and right controls.
+    property Item inlineNavigationItem: null
+
+    // Controls placed before and after the inline items, for navigating
+    // from the inline items:
+    readonly property Item inlineBeforeItem: loaderInline.item?.beforeItem ?? null
+    readonly property Item inlineAfterItem: loaderInline.item?.afterItem ?? null
+
     readonly property PlayerControlbarModel model: {
         if (!!MainCtx.controlbarProfileModel.currentModel)
             return MainCtx.controlbarProfileModel.currentModel.getModel(identifier)
@@ -57,11 +74,21 @@ FocusScope {
 
     // Settings
 
-    implicitWidth: loaderLeftRight.active ? loaderLeftRight.implicitWidth
-                                          : (loaderLeft.implicitWidth + loaderCenter.implicitWidth + loaderRight.implicitWidth)
+    implicitWidth: {
+        if (loaderInline.active)
+            return loaderInline.implicitWidth
+        if (loaderLeftRight.active)
+            return loaderLeftRight.implicitWidth
+        return (loaderLeft.implicitWidth + loaderCenter.implicitWidth + loaderRight.implicitWidth)
+    }
 
-    implicitHeight: loaderLeftRight.active ? loaderLeftRight.implicitHeight
-                                           : Math.max(loaderLeft.implicitHeight, loaderCenter.implicitHeight, loaderRight.implicitHeight)
+    implicitHeight: {
+        if (loaderInline.active)
+            return loaderInline.implicitHeight
+        if (loaderLeftRight.active)
+            return loaderLeftRight.implicitHeight
+        return Math.max(loaderLeft.implicitHeight, loaderCenter.implicitHeight, loaderRight.implicitHeight)
+    }
 
     // Events
 
@@ -74,7 +101,8 @@ FocusScope {
 
         anchors.fill: parent
 
-        active: !loaderCenter.active &&
+        active: !playerControlLayout._inline &&
+                !loaderCenter.active &&
                 playerControlLayout.model &&
                 ((playerControlLayout.model.left && (playerControlLayout.model.left.count > 0)) ||
                 (playerControlLayout.model.right && (playerControlLayout.model.right.count > 0)))
@@ -181,7 +209,8 @@ FocusScope {
             rightMargin: layoutSpacing - spacing
         }
 
-        active: !!playerControlLayout.model?.left && (playerControlLayout.model.left.count > 0) &&
+        active: !playerControlLayout._inline &&
+                !!playerControlLayout.model?.left && (playerControlLayout.model.left.count > 0) &&
                 !loaderLeftRight.active
 
         focus: active
@@ -225,7 +254,8 @@ FocusScope {
         }
 
         // TODO: "ControlListFilter"'s count......
-        active: !!playerControlLayout.model && !!playerControlLayout.model.center && (playerControlLayout.model.center.count > 0)
+        active: !playerControlLayout._inline &&
+                !!playerControlLayout.model && !!playerControlLayout.model.center && (playerControlLayout.model.center.count > 0)
 
         Binding on width {
             delayed: true
@@ -291,7 +321,8 @@ FocusScope {
             leftMargin: layoutSpacing - spacing
         }
 
-        active: !!playerControlLayout.model && !!playerControlLayout.model.right && (playerControlLayout.model.right.count > 0) &&
+        active: !playerControlLayout._inline &&
+                !!playerControlLayout.model && !!playerControlLayout.model.right && (playerControlLayout.model.right.count > 0) &&
                 !loaderLeftRight.active
 
         sourceComponent: ControlLayout {
@@ -321,6 +352,146 @@ FocusScope {
 
             Component.onCompleted:{
                 playerControlLayout.forceUnlock.connect(rightControlLayout.forceUnlock)
+            }
+        }
+    }
+
+    Loader {
+        id: loaderInline
+
+        anchors.fill: parent
+
+        active: playerControlLayout._inline
+
+        focus: active
+
+        sourceComponent: RowLayout {
+            id: inlineRow
+
+            spacing: playerControlLayout.layoutSpacing
+
+            focus: true
+
+            readonly property bool _hasLeft: (playerControlLayout.model?.left?.count ?? 0) > 0
+            readonly property bool _hasCenter: (playerControlLayout.model?.center?.count ?? 0) > 0
+            readonly property bool _hasRight: (playerControlLayout.model?.right?.count ?? 0) > 0
+
+            readonly property Item beforeItem: _hasCenter ? inlineCenter : (_hasLeft ? inlineLeft : null)
+            readonly property Item afterItem: _hasRight ? inlineRight : null
+
+            ControlLayout {
+                id: inlineLeft
+
+                Layout.fillHeight: true
+                Layout.preferredWidth: implicitWidth
+
+                visible: inlineRow._hasLeft
+
+                model: ControlListFilter {
+                    sourceModel: playerControlLayout.model?.left ?? null
+
+                    player: Player
+                    ctx: MainCtx
+                }
+
+                alignment: Qt.AlignVCenter
+
+                spacing: playerControlLayout.spacing
+
+                focus: inlineRow._hasLeft
+
+                altFocusAction: () => Navigation.defaultNavigationRight()
+
+                Navigation.parentItem: playerControlLayout
+                Navigation.rightItem: {
+                    if (inlineRow._hasCenter)
+                        return inlineCenter
+                    return playerControlLayout.inlineNavigationItem ?? (inlineRow._hasRight ? inlineRight : null)
+                }
+
+                Component.onCompleted: {
+                    requestLockUnlockAutoHide.connect(playerControlLayout.requestLockUnlockAutoHide)
+                    menuOpened.connect(playerControlLayout.menuOpened)
+                    playerControlLayout.forceUnlock.connect(inlineLeft.forceUnlock)
+                }
+            }
+
+            ControlLayout {
+                id: inlineCenter
+
+                Layout.fillHeight: true
+                Layout.preferredWidth: implicitWidth
+
+                visible: inlineRow._hasCenter
+
+                model: ControlListFilter {
+                    sourceModel: playerControlLayout.model?.center ?? null
+
+                    player: Player
+                    ctx: MainCtx
+                }
+
+                alignment: Qt.AlignVCenter
+
+                spacing: playerControlLayout.spacing
+
+                focus: !inlineRow._hasLeft && inlineRow._hasCenter
+
+                altFocusAction: () => Navigation.defaultNavigationUp()
+
+                Navigation.parentItem: playerControlLayout
+                Navigation.leftItem: inlineRow._hasLeft ? inlineLeft : null
+                Navigation.rightItem: playerControlLayout.inlineNavigationItem ?? (inlineRow._hasRight ? inlineRight : null)
+
+                Component.onCompleted: {
+                    requestLockUnlockAutoHide.connect(playerControlLayout.requestLockUnlockAutoHide)
+                    menuOpened.connect(playerControlLayout.menuOpened)
+                    playerControlLayout.forceUnlock.connect(inlineCenter.forceUnlock)
+                }
+            }
+
+            RowLayout {
+                id: inlineSlot
+
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                spacing: VLCStyle.margin_xsmall
+
+                children: playerControlLayout.inlineItems
+            }
+
+            ControlLayout {
+                id: inlineRight
+
+                Layout.fillHeight: true
+                Layout.preferredWidth: implicitWidth
+
+                visible: inlineRow._hasRight
+
+                model: ControlListFilter {
+                    sourceModel: playerControlLayout.model?.right ?? null
+
+                    player: Player
+                    ctx: MainCtx
+                }
+
+                alignment: Qt.AlignVCenter
+
+                spacing: playerControlLayout.spacing
+
+                focus: !inlineRow._hasLeft && !inlineRow._hasCenter && inlineRow._hasRight
+
+                altFocusAction: () => Navigation.defaultNavigationLeft()
+
+                Navigation.parentItem: playerControlLayout
+                Navigation.leftItem: playerControlLayout.inlineNavigationItem ?? inlineRow.beforeItem
+
+                Component.onCompleted: {
+                    requestLockUnlockAutoHide.connect(playerControlLayout.requestLockUnlockAutoHide)
+                    menuOpened.connect(playerControlLayout.menuOpened)
+                    playerControlLayout.forceUnlock.connect(inlineRight.forceUnlock)
+                }
             }
         }
     }

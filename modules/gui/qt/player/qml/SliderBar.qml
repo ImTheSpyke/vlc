@@ -28,20 +28,38 @@ import VLC.MainInterface
 T.ProgressBar {
     id: control
 
-    readonly property real _hoveredScalingFactor: 1.8
+    // When set, the slider is drawn as a recessed block track with an
+    // accent tinted progress and a vertical accent handle (redesign style).
+    property bool blockStyle: false
+
+    readonly property real _hoveredScalingFactor: blockStyle ? 1.0 : 1.8
     property int barHeight: VLCStyle.dp(5, VLCStyle.scale)
-    readonly property real _scaledBarHeight: control.barHeight * _hoveredScalingFactor
-    readonly property real _scaledY: (-control.barHeight / 2) * (control._hoveredScalingFactor - 1)
+
+    // Geometry of the area where progress and chapters are drawn:
+    readonly property real _inset: blockStyle ? VLCStyle.controlBarSliderInset : 0
+    readonly property real _innerWidth: Math.max(0, control.availableWidth - 2 * _inset)
+    readonly property real _innerHeight: Math.max(0, control.barHeight - 2 * _inset)
+
+    readonly property real _scaledBarHeight: control._innerHeight * _hoveredScalingFactor
+    readonly property real _scaledY: control._inset + (-control._innerHeight / 2) * (control._hoveredScalingFactor - 1)
 
     property bool _isSeekPointsShown: true
     readonly property int _seekPointsDistance: VLCStyle.dp(2, VLCStyle.scale)
-    readonly property int _seekPointsRadius: VLCStyle.dp(0.5, VLCStyle.scale)
+    readonly property int _seekPointsRadius: blockStyle ? VLCStyle.button_radius
+                                                        : VLCStyle.dp(0.5, VLCStyle.scale)
     readonly property real _scaledSeekPointsRadius: _seekPointsRadius * _hoveredScalingFactor
 
     property bool _currentChapterHovered: false
     property real _tooltipPosition: (Widgets.PointingToolTipAttached.instance?.pos.x ?? 0.0) / width
 
-    property color backgroundColor: theme.bg.primary
+    property color backgroundColor: blockStyle ? Qt.tint(theme.bg.primary, (theme.palette?.isDark ?? true) ? "#c0000000"
+                                                                                                         : "#a0ffffff")
+                                               : theme.bg.primary
+    property color progressColor: blockStyle ? Qt.tint(control.backgroundColor, Qt.alpha(theme.accent, 0.28))
+                                             : theme.fg.primary
+    property color handleColor: blockStyle ? (hoverHandler.hovered || control.visualFocus ? Qt.lighter(theme.accent, 1.15)
+                                                                                          : theme.accent)
+                                           : theme.fg.primary
     property real touchHandlerMargin: VLCStyle.touchHandlerMargin
 
     Keys.onRightPressed: Player.jumpFwd()
@@ -321,10 +339,10 @@ T.ProgressBar {
 
         Rectangle {
             id: sliderRect
-            visible: !Player.hasChapters
+            visible: control.blockStyle || !Player.hasChapters
             color: control.backgroundColor
             anchors.fill: parent
-            radius: implicitHeight
+            radius: control.blockStyle ? VLCStyle.controlBarRadius : implicitHeight
         }
 
         Repeater {
@@ -357,9 +375,15 @@ T.ProgressBar {
                     readonly property bool _hovered: hoverHandler.hovered &&
                                             (hoverHandler.point.position.x > x && hoverHandler.point.position.x < x+width)
 
-                    color: _currentChapter < 0 ? theme.fg.primary : control.backgroundColor
-                    width: sliderRect.width * seekpointsRect.endPosition - x - control._seekPointsDistance
-                    x: sliderRect.width * seekpointsRect.startPosition
+                    color: {
+                        if (_currentChapter < 0)
+                            return control.progressColor
+                        // Make the unplayed chapters stand out from the track:
+                        return control.blockStyle ? Qt.tint(control.backgroundColor, Qt.alpha(theme.fg.primary, 0.08))
+                                                  : control.backgroundColor
+                    }
+                    width: control._inset + control._innerWidth * seekpointsRect.endPosition - x - control._seekPointsDistance
+                    x: control._inset + control._innerWidth * seekpointsRect.startPosition
 
                     Rectangle {
                         id: progressRepRect
@@ -368,9 +392,9 @@ T.ProgressBar {
                         anchors.bottom: parent.bottom
                         radius: parent.radius
 
-                        width: sliderRect.width * control.visualPosition - parent.x - control._seekPointsDistance
+                        width: control._inset + control._innerWidth * control.visualPosition - parent.x - control._seekPointsDistance
                         visible: parent._currentChapter === 0
-                        color: theme.fg.primary
+                        color: control.progressColor
 
                         // We use dynamic mutability group because time interpolation
                         // may induce rapid change:
@@ -405,8 +429,8 @@ T.ProgressBar {
                             target: control;
                             _currentChapterHovered: seekpointsRect._currentChapter === 0 ? false : control._currentChapterHovered
                         }
-                        PropertyChanges { target: seekpointsRect; height: control.barHeight }
-                        PropertyChanges { target: seekpointsRect; y: 0 }
+                        PropertyChanges { target: seekpointsRect; height: control._innerHeight }
+                        PropertyChanges { target: seekpointsRect; y: control._inset }
                         PropertyChanges { target: seekpointsRect; radius: control._seekPointsRadius }
                     },
                     State {
@@ -429,10 +453,13 @@ T.ProgressBar {
 
         Rectangle {
             id: progressRect
-            width: control.visualPosition * parent.width
+            x: control._inset
+            y: control._inset
+            width: control.blockStyle ? Math.max(control.visualPosition * control._innerWidth, VLCStyle.controlBarSliderHandleWidth)
+                                      : control.visualPosition * parent.width
             visible: !Player.hasChapters
-            color: theme.fg.primary
-            height: control.barHeight
+            color: control.progressColor
+            height: control._innerHeight
             radius: control._seekPointsRadius
 
             // We use dynamic mutability group because time interpolation
@@ -456,10 +483,11 @@ T.ProgressBar {
             property bool display: false
             property bool buffering: Player.buffering > 0 && Player.buffering < 1
 
-            height: control.barHeight
+            y: control._inset
+            height: control._innerHeight
             opacity: 0.4
             color: theme.fg.neutral //FIXME buffer color ?
-            radius: control.barHeight
+            radius: control.blockStyle ? control._seekPointsRadius : control.barHeight
 
             // TODO: Do not use `Binding` when minimum Qt is 6.12:
             Binding {
@@ -576,7 +604,7 @@ T.ProgressBar {
         implicitWidth: sliderHandle._size
         implicitHeight: sliderHandle._size
         radius: VLCStyle.margin_small
-        color: theme.fg.primary
+        color: control.handleColor
 
         // We use dynamic mutability group because time interpolation
         // may induce rapid change:
@@ -625,8 +653,34 @@ T.ProgressBar {
             }
         ]
 
-        state: (hoverHandler.hovered || control.visualFocus)
+        state: (!control.blockStyle && (hoverHandler.hovered || control.visualFocus))
                ? ((control._currentChapterHovered || (Player.hasChapters && fsm._state === fsm.fsmHeld)) ? "visibleLarge" : "visible")
                : "hidden"
+    }
+
+    // Handle of the block style: a vertical bar at the end of the progress,
+    // always visible.
+    Rectangle {
+        id: blockHandle
+
+        visible: control.blockStyle
+
+        width: VLCStyle.controlBarSliderHandleWidth
+        height: control._innerHeight
+
+        x: control._inset + Math.max(0, control.visualPosition * control._innerWidth - width)
+        y: control._inset
+
+        radius: control._seekPointsRadius
+        color: control.handleColor
+
+        // TODO: Do not use `Binding` when minimum Qt is 6.12:
+        Binding {
+            target: blockHandle
+            property: "mutabilityGroup"
+            when: (blockHandle.mutabilityGroup !== undefined)
+            value: (Player.playingState === Player.PLAYING_STATE_PLAYING) ? Item.DynamicMutabilityGroup
+                                                                          : Item.StaticMutabilityGroup
+        }
     }
 }

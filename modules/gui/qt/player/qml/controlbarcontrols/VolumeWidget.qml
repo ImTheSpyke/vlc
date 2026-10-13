@@ -97,8 +97,7 @@ T.Pane {
         Widgets.SliderExt {
             id: volControl
 
-            // FIXME: use VLCStyle
-            implicitWidth: VLCStyle.dp(100, VLCStyle.scale)
+            implicitWidth: VLCStyle.volumeSliderWidth
 
             // WARNING: Directly setting the insets break handle and background positioning.
             Binding on topInset {
@@ -111,7 +110,8 @@ T.Pane {
             }
 
             Layout.fillHeight: true
-            Layout.margins: VLCStyle.margin_xsmall
+            Layout.leftMargin: VLCStyle.margin_xsmall
+            Layout.rightMargin: VLCStyle.margin_xxxsmall
 
             property bool _inhibitPlayerVolumeUpdate: false
 
@@ -126,6 +126,95 @@ T.Pane {
             property bool filterEvents: false
 
             color: root.sliderColor
+
+            // Wedge shaped volume gauge, its height grows with the volume:
+            readonly property color wedgeColor: Qt.tint(colorContext.bg.primary,
+                                                        (colorContext.palette?.isDark ?? true) ? "#c0000000"
+                                                                                               : "#a0ffffff")
+
+            handle: Rectangle {
+                x: volControl.leftPadding + volControl.visualPosition * (volControl.availableWidth - width)
+                y: volControl.background.y + (volControl.background.height - height) / 2
+
+                implicitWidth: VLCStyle.dp(2, VLCStyle.scale)
+                implicitHeight: volControl.background.height * (0.3 + 0.7 * volControl.visualPosition)
+
+                radius: width / 2
+                color: volControl.colorContext.fg.primary
+                visible: (volControl.visualFocus || volControl.pressed) && volControl.enabled
+            }
+
+            background: Canvas {
+                id: wedge
+
+                x: volControl.leftPadding
+                y: volControl.topPadding + (volControl.availableHeight - height) / 2
+
+                implicitWidth: VLCStyle.volumeSliderWidth
+                implicitHeight: VLCStyle.volumeSliderHeight
+
+                width: volControl.availableWidth
+                height: Math.min(implicitHeight, volControl.availableHeight)
+
+                readonly property real fill: volControl.visualPosition
+                readonly property color trackColor: volControl.wedgeColor
+
+                onFillChanged: requestPaint()
+                onTrackColorChanged: requestPaint()
+                onWidthChanged: requestPaint()
+                onHeightChanged: requestPaint()
+
+                onPaint: {
+                    const ctx = getContext("2d")
+                    ctx.reset()
+
+                    const w = width
+                    const h = height
+                    if (w <= 0 || h <= 0)
+                        return
+
+                    // keep the rounded joins inside the item:
+                    const m = VLCStyle.dp(1, VLCStyle.scale)
+                    const innerW = w - 2 * m
+                    const innerH = h - 2 * m
+                    const leftH = innerH * 0.3
+
+                    function wedgePath(right) {
+                        const x = m + innerW * right
+                        const top = m + ((innerH - leftH) / 2) * (1 - right)
+                        ctx.beginPath()
+                        ctx.moveTo(m, m + (innerH - leftH) / 2)
+                        ctx.lineTo(x, top)
+                        ctx.lineTo(x, h - top)
+                        ctx.lineTo(m, m + (innerH + leftH) / 2)
+                        ctx.closePath()
+                    }
+
+                    ctx.lineJoin = "round"
+                    ctx.lineWidth = 2 * m
+
+                    wedgePath(1.0)
+                    ctx.fillStyle = String(trackColor)
+                    ctx.strokeStyle = String(trackColor)
+                    ctx.fill()
+                    ctx.stroke()
+
+                    if (fill <= 0)
+                        return
+
+                    const gradient = ctx.createLinearGradient(m, 0, m + innerW, 0)
+                    gradient.addColorStop(0.0, "#76a91b")
+                    gradient.addColorStop(0.5, "#a8a01a")
+                    gradient.addColorStop(0.75, "#d37918")
+                    gradient.addColorStop(1.0, "#d3331b")
+
+                    wedgePath(Math.min(fill, 1.0))
+                    ctx.fillStyle = gradient
+                    ctx.strokeStyle = gradient
+                    ctx.fill()
+                    ctx.stroke()
+                }
+            }
 
             from: 0
             to: root._maxvolpos
