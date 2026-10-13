@@ -47,6 +47,9 @@ QtObject {
         ctx: MainCtx
     }
 
+    // metrics from the "VLC Redesign" Figma file apply with the Figma color scheme
+    readonly property bool isFigmaScheme: MainCtx.colorScheme.scheme === ColorSchemeModel.Figma
+
     readonly property real highPixelDensityThreshold: 5.9 // 150 dpi (dpmm)
 
     // Sizes
@@ -175,7 +178,7 @@ QtObject {
     readonly property int button_width_normal: MainCtx.dp(96, scale)
     readonly property int button_width_large: MainCtx.dp(128, scale)
 
-    readonly property real button_radius: MainCtx.dp(4, scale)
+    readonly property real button_radius: MainCtx.dp(isFigmaScheme ? 6 : 4, scale)
 
     readonly property int contextButton_width: icon_normal
     readonly property int contextButton_margin: margin_xxsmall

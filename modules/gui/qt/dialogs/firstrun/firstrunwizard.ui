@@ -263,6 +263,53 @@
       </item>
      </layout>
     </item>
+    <item row="2" column="3">
+     <layout class="QVBoxLayout" name="verticalLayout_figma">
+      <item alignment="Qt::AlignHCenter">
+       <widget class="QRadioButton" name="figmaButton">
+        <property name="text">
+         <string>Figma</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacer_figma">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Maximum</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="figmaImage">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../../vlc.qrc">
+          <normaloff>:/misc/theme_figma.svg</normaloff>:/misc/theme_figma.svg</iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>87</width>
+          <height>154</height>
+         </size>
+        </property>
+        <property name="flat">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
     <item row="0" column="0">
      <widget class="QLabel" name="colorLabel">
       <property name="text">
@@ -336,7 +383,7 @@
       </property>
      </spacer>
     </item>
-    <item row="4" column="0" colspan="3">
+    <item row="4" column="0" colspan="4">
      <widget class="QLabel" name="explainerLabel">
       <property name="text">
        <string>&lt;i&gt;VLC will automatically switch to dark mode accordingly with system settings&lt;/i&gt;</string>

@@ -939,6 +939,7 @@ libqt_plugin_la_RES = \
 	pixmaps/misc/cone.svg \
 	pixmaps/misc/new_indicator.svg \
 	pixmaps/misc/theme_dark.svg \
+	pixmaps/misc/theme_figma.svg \
 	pixmaps/misc/theme_daynight.svg \
 	pixmaps/misc/theme_light.svg \
 	pixmaps/misc/wait1.svg \
