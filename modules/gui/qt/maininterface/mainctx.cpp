@@ -43,6 +43,7 @@
 #include "util/qt_dirs.hpp"                     // toNativeSeparators
 
 #include "util/color_scheme_model.hpp"
+#include "style/systempalette.hpp"
 
 #include "widgets/native/interface_widgets.hpp"     // bgWidget, videoWidget
 
@@ -76,6 +77,8 @@
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
 #include <QStyleHints>
+#include <QApplication>
+#include <QMenu>
 #endif
 
 #ifdef _WIN32
@@ -127,6 +130,59 @@ template <>
 bool loadVLCOption<bool>(vlc_object_t *obj, const char *name)
 {
     return var_InheritBool(obj, name);
+}
+
+// Make menus translucent before their window is created, so that the
+// rounded corners of the Figma menu style sheet show what lies behind
+class MenuTranslucencyFilter : public QObject
+{
+public:
+    using QObject::QObject;
+
+    bool eventFilter(QObject *obj, QEvent *event) override
+    {
+        if (event->type() == QEvent::Polish)
+        {
+            QMenu *menu = qobject_cast<QMenu *>(obj);
+            if (menu && !menu->testAttribute(Qt::WA_TranslucentBackground) && !menu->windowHandle())
+            {
+                menu->setAttribute(Qt::WA_TranslucentBackground);
+                menu->setWindowFlags(menu->windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+                // the Figma menus are at least 265px wide
+                menu->setMinimumWidth(265);
+            }
+        }
+        return QObject::eventFilter(obj, event);
+    }
+};
+
+void applyWidgetStyleSheet(ColorSchemeModel::ColorScheme scheme)
+{
+    static MenuTranslucencyFilter *filter = nullptr;
+
+    QApplication *app = qobject_cast<QApplication *>(QCoreApplication::instance());
+    if (!app)
+        return;
+
+    if (scheme == ColorSchemeModel::Figma)
+    {
+        if (!filter)
+        {
+            filter = new MenuTranslucencyFilter(app);
+            app->installEventFilter(filter);
+        }
+        app->setStyleSheet(SystemPalette::figmaMenuStyleSheet());
+    }
+    else
+    {
+        if (filter)
+        {
+            app->removeEventFilter(filter);
+            delete filter;
+            filter = nullptr;
+        }
+        app->setStyleSheet(QString());
+    }
 }
 
 }
@@ -186,6 +242,12 @@ MainCtx::MainCtx(qt_intf_t *_p_intf)
         styleHints->setColorScheme(scheme);
     });
 #endif
+
+    // widget menus (QMenu) are not styled from QML, give them the Figma look
+    // with a style sheet
+    connect(m_colorScheme, &ColorSchemeModel::currentChanged, this, [colorScheme = m_colorScheme]() {
+        applyWidgetStyleSheet(colorScheme->currentScheme());
+    });
 
     m_sort = new SortCtx(this);
     m_search = new SearchCtx(this);

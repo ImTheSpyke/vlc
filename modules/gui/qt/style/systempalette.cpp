@@ -900,6 +900,21 @@ void SystemPalette::makeDarkPalette()
 }
 
 // Colors from the "VLC Redesign" community Figma file (Dark/* variables).
+namespace figma {
+const QColor fgA1 { "#969696" };
+const QColor fgA2 { "#8F8F8F" };
+const QColor fgA3 { "#6B6B6B" };
+const QColor fgA4 { "#404040" };
+const QColor fgB1 { "#161616" };
+const QColor bgA4 { "#191919" };
+const QColor bgB1 { "#0E0E0E" };
+const QColor bgB2 { "#090909" };
+const QColor bgAccentBright { "#371F06" };
+const QColor divider { "#222222" };
+const QColor accent { "#D37918" };
+const QColor accentDim { "#AB6314" };
+}
+
 // Negative/Neutral/Positive have no counterpart in the design and keep the
 // values of the dark palette.
 void SystemPalette::makeFigmaPalette()
@@ -909,19 +924,7 @@ void SystemPalette::makeFigmaPalette()
     m_colorMap.clear();
 
     typedef ColorContext C;
-
-    const QColor fgA1 { "#969696" };
-    const QColor fgA2 { "#8F8F8F" };
-    const QColor fgA3 { "#6B6B6B" };
-    const QColor fgA4 { "#404040" };
-    const QColor fgB1 { "#161616" };
-    const QColor bgA4 { "#191919" };
-    const QColor bgB1 { "#0E0E0E" };
-    const QColor bgB2 { "#090909" };
-    const QColor bgAccentBright { "#371F06" };
-    const QColor divider { "#222222" };
-    const QColor accent { "#D37918" };
-    const QColor accentDim { "#AB6314" };
+    using namespace figma;
 
     {
         C::ColorSet CS = C::View;
@@ -1126,6 +1129,54 @@ void SystemPalette::makeFigmaPalette()
         setColor(CS, C::Bg, C::Highlight, C::Normal, bgAccentBright);
         setColor(CS, C::Fg, C::Highlight, C::Normal, accent);
     }
+}
+
+// Geometry from the menus of the Figma file ("right-click menu", "context
+// menu"): 4px inner padding, 48px rows, 24px icons 14px from the row's left
+// edge, labels 48px from it, 14px right padding and 1px separators.
+// Rows are laid out by Qt, the label offset accounts for its icon column.
+QString SystemPalette::figmaMenuStyleSheet()
+{
+    using namespace figma;
+
+    return QStringLiteral(
+        "QMenu {"
+        "  background-color: %1;"
+        "  color: %2;"
+        "  border: 1px solid %3;"
+        "  border-radius: 6px;"
+        "  padding: 3px;"
+        "  font-size: 14px;"
+        "  icon-size: 24px;"
+        "}"
+        "QMenu::item {"
+        "  height: 48px;"
+        "  padding: 0px 14px 0px 20px;"
+        "  border-radius: 6px;"
+        "  background-color: transparent;"
+        "}"
+        "QMenu::item:selected {"
+        "  background-color: %4;"
+        "  color: %5;"
+        "}"
+        "QMenu::item:disabled {"
+        "  color: %6;"
+        "}"
+        "QMenu::icon {"
+        "  left: 14px;"
+        "}"
+        "QMenu::separator {"
+        "  height: 1px;"
+        "  margin: 0px;"
+        "  background-color: %3;"
+        "}"
+        "QMenu::right-arrow {"
+        "  width: 24px;"
+        "  height: 24px;"
+        "  right: 14px;"
+        "}")
+        .arg(bgA4.name(), fgA1.name(), divider.name(),
+             bgB2.name(), fgA2.name(), fgA4.name());
 }
 
 void SystemPalette::makeSystemPalette()
