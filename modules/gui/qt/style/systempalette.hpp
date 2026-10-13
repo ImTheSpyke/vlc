@@ -153,6 +153,9 @@ public:
     void classBegin() override { }
     void componentComplete() override;
 
+    // style sheet for the widget menus (QMenu) of the Figma color scheme
+    static QString figmaMenuStyleSheet();
+
 public slots:
     void setSource(ColorSchemeModel::ColorScheme source);
     void setCtx(MainCtx* ctx);

@@ -37,7 +37,7 @@ T.Button {
     readonly property bool _paintHovered: control.hovered || showHovered
 
     padding: 0
-    width: VLCStyle.dp(40, VLCStyle.scale)
+    width: VLCStyle.isFigmaScheme ? VLCStyle.csdButtonFigmaWidth : VLCStyle.dp(40, VLCStyle.scale)
 
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
                             implicitContentWidth + leftPadding + rightPadding)

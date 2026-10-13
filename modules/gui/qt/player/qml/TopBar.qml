@@ -61,9 +61,13 @@ FocusScope{
 
     property bool _showTopBar: (pinControls === false || showToolbar === false)
 
-    property bool _showCenterText: (pinControls && showToolbar === false && showCSD)
+    // the Figma redesign has a single 40px line with the title in its center
+    readonly property bool _figma: VLCStyle.isFigmaScheme
 
-    readonly property int _sideMargin: VLCStyle.margin_small + sideMargin
+    property bool _showCenterText: (pinControls && showToolbar === false && showCSD)
+                                   || (_figma && showToolbar === false)
+
+    readonly property int _sideMargin: (_figma ? VLCStyle.topBarFigmaMargin : VLCStyle.margin_small) + sideMargin
 
     // Aliases
 
@@ -95,6 +99,7 @@ FocusScope{
     onShowToolbarChanged: _layout()
     onTopMarginChanged: _layout()
     onSideMarginChanged: _layout()
+    on_FigmaChanged: _layout()
 
     on_ShowTopBarChanged: _layout()
     on_ShowCenterTextChanged: _layout()
@@ -137,18 +142,27 @@ FocusScope{
             //place everything on one line
             //csdDecorations.implicitHeight gets overwritten when the height is set,
             //VLCStyle.icon_normal is its initial value
-            const lineHeight = Math.max(logoOrResume.implicitHeight, playlistGroup.implicitHeight, VLCStyle.icon_normal)
+            const lineHeight = _figma ? VLCStyle.topBarFigmaHeight
+                                      : Math.max(logoOrResume.implicitHeight, playlistGroup.implicitHeight, VLCStyle.icon_normal)
 
             centerTitleText.y = 0
             centerTitleText.height = lineHeight
 
-            csdDecorations.height  = lineHeight
+            if (_figma) {
+                csdDecorations.height = VLCStyle.csdButtonFigmaHeight
+                csdDecorations.anchors.topMargin = (lineHeight - VLCStyle.csdButtonFigmaHeight) / 2
+            } else {
+                csdDecorations.height = lineHeight
+                csdDecorations.anchors.topMargin = 0
+            }
 
             logoOrResume.height =  lineHeight
 
             playlistGroup.height = lineHeight
             playlistGroup.anchors.topMargin = 0
-            playlistGroup.extraRightMargin = Qt.binding(function() { return width - csdDecorations.x })
+            playlistGroup.extraRightMargin = Qt.binding(function() {
+                return root.showCSD ? width - csdDecorations.x : 0
+            })
 
 
             implicitHeight = lineHeight
@@ -354,7 +368,7 @@ FocusScope{
 
         text: root.title
         color: theme.fg.primary
-        font.pixelSize: VLCStyle.dp(13, VLCStyle.scale)
+        font.pixelSize: VLCStyle.dp(root._figma ? 14 : 13, VLCStyle.scale)
         font.weight: Font.DemiBold
         elide: Text.ElideRight
         verticalAlignment: Text.AlignVCenter
@@ -383,7 +397,7 @@ FocusScope{
 
         width: root.textWidth - VLCStyle.margin_normal
 
-        visible: !root.pinControls
+        visible: !root.pinControls && !root._figma
 
         enabled: visible
 
@@ -403,6 +417,7 @@ FocusScope{
 
         anchors.top: parent.top
         anchors.right: parent.right
+        anchors.rightMargin: root._figma ? VLCStyle.topBarFigmaMargin : 0
 
         focus: false
         height: VLCStyle.icon_normal
@@ -426,7 +441,7 @@ FocusScope{
         property int extraRightMargin: 0
 
         focus: true
-        spacing: VLCStyle.margin_xxsmall
+        spacing: root._figma ? VLCStyle.topBarFigmaSpacing : VLCStyle.margin_xxsmall
 
         anchors.top: parent.top
         anchors.right: parent.right
